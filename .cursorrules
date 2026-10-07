@@ -1,0 +1,134 @@
+# Cursor Rules for Holocron Career AI
+
+## Project Overview
+Holocron Career AI is a multi-tenant SaaS platform for career management with AI agents.
+Stack: Next.js 15 + FastAPI + PostgreSQL + Strands Agents SDK
+
+## Code Style
+
+### Python (FastAPI)
+- Use Pydantic v2 for all data models
+- Follow Clean Architecture: domain → application → infrastructure → presentation
+- Type hints required for all functions
+- Use async/await for I/O operations
+- Follow LGPD compliance: tenant_id on all queries
+- Test first with pytest and moto for mocks
+
+### TypeScript/Next.js 15
+- Use App Router (app/ directory)
+- Server Components by default, Client Components only when needed
+- Tailwind CSS for styling, shadcn/ui for components
+- TypeScript strict mode enabled
+- Use zod for form validation
+- Implement tenant-based routing
+
+## Architecture Decisions
+
+### Multi-Tenancy
+- Shared database, shared schema with `tenant_id` column
+- Middleware extracts tenant_id from JWT
+- All queries must include `WHERE tenant_id = :tenant_id`
+- No cross-tenant data access allowed
+
+### Agent Orchestration
+- Use Strands Agents SDK as primary orchestrator
+- Each agent has specific purpose: Search, Matching, Resume, etc.
+- Agents communicate via structured messages
+- RAG pipeline for matching: ChromaDB → Bedrock
+
+### Security & Compliance (LGPD)
+- Anonymize sensitive data: CPF, email, nome, nascimento
+- Encrypt sessions per tenant
+- Audit logging for all data access
+- Right to be forgotten implemented
+- Data retention policies enforced
+
+## Prompt Engineering Rules
+
+### Agent System Prompts
+- Always include tenant context
+- Specify output format (JSON when applicable)
+- Include LGPD constraints explicitly
+- Use role-based instructions (e.g., "You are a career consultant...")
+
+### API Responses
+- Include tenant_id in all responses
+- Standard error format with codes
+- Pagination for list endpoints
+- ETags for caching
+
+## Testing Requirements
+
+### Unit Tests
+- Minimum 80% coverage for core modules
+- Use pytest fixtures for test data
+- Mock AWS services with moto
+
+### Integration Tests
+- Test multi-tenant isolation
+- Test agent workflows end-to-end
+- Test RAG pipeline with sample documents
+
+## Deployment
+
+### Development
+- Docker Compose for local development
+- PostgreSQL, Redis, ChromaDB as containers
+- Environment variables in .env.local
+
+### Production
+- AWS ECS Fargate for API
+- Aurora PostgreSQL for database
+- CloudFront + S3 for static assets
+- Cognito for authentication
+- Bedrock for AI services
+
+## LGPD Compliance Checklist
+
+- [ ] tenant_id on all database queries
+- [ ] Data anonymization before LLM calls
+- [ ] Audit logging for sensitive operations
+- [ ] Right to deletion (soft delete + anonymize)
+- [ ] Data portability (export as JSON)
+- [ ] Consent tracking
+- [ ] Data retention policies
+
+## Security Checklist
+
+- [ ] JWT validation on all protected routes
+- [ ] Rate limiting per tenant
+- [ ] SQL injection prevention (ORM usage)
+- [ ] XSS prevention (input sanitization)
+- [ ] Secrets managed via AWS Secrets Manager
+- [ ] HTTPS enforced
+- [ ] CORS properly configured
+
+## Common Patterns
+
+### FastAPI Endpoint
+```python
+@router.get("/jobs", response_model=PaginatedJobList)
+async def list_jobs(
+    request: Request,
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_current_tenant),
+    skip: int = 0,
+    limit: int = 10,
+):
+    jobs = job_service.get_by_tenant(db, tenant_id, skip=skip, limit=limit)
+    return jobs
+```
+
+### Strands Agent
+```python
+@agent.tool
+def search_jobs(location: str, stack: List[str]) -> str:
+    """Search for job openings matching criteria."""
+    results = job_search_service.search(location, stack)
+    return json.dumps(results)
+```
+
+## Notes
+- Update this file when architecture decisions change
+- Document all ADRs in docs/adr/
+- Keep README.md in sync with implementation

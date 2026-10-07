@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests"]
+addopts = "-v --cov=src --cov-report=term-missing --cov-report=xml"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+select = ["E", "F", "W", "C", "I"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
