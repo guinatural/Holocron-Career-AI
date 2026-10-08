@@ -228,3 +228,43 @@ def list_interactions(
 ):
     """List all AI agent interactions."""
     return db.query(DBAgentInteraction).filter(DBAgentInteraction.tenant_id == tenant_id).all()
+
+from fastapi import UploadFile, File
+import PyPDF2
+import io
+from ..infrastructure.rag_service import rag_service
+
+@router.post("/upload-resume/{user_id}")
+async def upload_resume(user_id: str, file: UploadFile = File(...)):
+    """Recebe um PDF, extrai o texto e injeta no Vector DB (RAG)."""
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF são suportados.")
+        
+    try:
+        # 1. Lê o arquivo da memória (sem salvar no disco)
+        content = await file.read()
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+        
+        # 2. Extrai o texto puro
+        resume_text = ""
+        for page in pdf_reader.pages:
+            resume_text += page.extract_text() + "\n"
+            
+        if not resume_text.strip():
+            raise HTTPException(status_code=400, detail="Não foi possível extrair texto deste PDF.")
+            
+        # 3. Chama o serviço de IA para vetorizar o texto
+        rag_service.inject_resume(
+            user_id=user_id,
+            resume_text=resume_text,
+            metadata={"filename": file.filename}
+        )
+        
+        return {
+            "status": "success", 
+            "message": "Currículo vetorizado e pronto para os agentes de IA!",
+            "extracted_length": len(resume_text)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar currículo: {str(e)}")
