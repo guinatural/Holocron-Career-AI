@@ -7,13 +7,13 @@
 
 ---
 
-## 🎯 Visão Geral
+## Visão Geral
 
-O **Holocron Career AI** é o produto final do ecossistema Holocron: uma plataforma SaaS *multi-tenant* focada em gestão inteligente de carreira. Diferente de aplicações CRUD tradicionais, esta plataforma utiliza uma arquitetura **Event-Driven** e **Serverless**, integrando **Amazon Bedrock (GenAI)** para matching semântico avançado e agentes autônomos de currículo.
+O Holocron Career AI é o produto principal do ecossistema Holocron: uma plataforma SaaS multi-tenant focada na gestão automatizada de carreiras. Ao invés de operações tradicionais de CRUD, a aplicação é construída sobre uma arquitetura orientada a eventos (Event-Driven) e serverless, utilizando o Amazon Bedrock (GenAI) para correspondência semântica de currículos e operação de agentes autônomos.
 
 ---
 
-## 🏛️ Arquitetura de Produção (AWS Native)
+## Arquitetura de Produção (AWS Native)
 
 A arquitetura foi desenhada com foco nos pilares do **AWS Well-Architected Framework**, garantindo Observabilidade (O11y), Controle de Custos (FinOps) e Segurança (Zero Trust).
 
@@ -55,7 +55,7 @@ flowchart TD
     FinOps -.->|Monitor| Bedrock
 ```
 
-### 🛡️ Padrões Enterprise Implementados
+### Padrões Enterprise Implementados
 1. **FinOps & Cost Control:** AWS Budgets integrados via **AWS CDK** para matar execuções caso o custo de tokens passe do limite diário estabelecido.
 2. **Observabilidade Total:** Logs estruturados e *traces* de execução de IA injetados em todas as chamadas do Bedrock.
 3. **Infraestrutura como Código (IaC):** Stack definida integralmente em **AWS CDK (TypeScript/Python)**.
@@ -138,15 +138,15 @@ holocron-career-ai/
 
 | Fase | Objetivo | Status |
 |---|---|---|
-| 0 | Documentação e arquitetura | ✅ |
-| 1 | Fundação (CRM funcional) | 🔶 Planejado |
-| 2 | Search Agent + RSS ingestion | 🔶 Planejado |
-| 3 | Matching Agent + RAG | 🔶 Planejado |
-| 4 | Resume Agent | 🔶 Planejado |
-| 5 | Cover Letter + Mensagens | 🔶 Planejado |
-| 6 | CRM Completo + Kanban | 🔶 Planejado |
-| 7 | Interview Agent | 🔶 Planejado |
-| 8 | Aprendizado + AWS Deploy | 🔶 Planejado |
+| 0 | Documentação e arquitetura | |
+| 1 | Fundação (CRM funcional) | Planejado |
+| 2 | Search Agent + RSS ingestion | Planejado |
+| 3 | Matching Agent + RAG | Planejado |
+| 4 | Resume Agent | Planejado |
+| 5 | Cover Letter + Mensagens | Planejado |
+| 6 | CRM Completo + Kanban | Planejado |
+| 7 | Interview Agent | Planejado |
+| 8 | Aprendizado + AWS Deploy | Planejado |
 
 ---
 
