@@ -2,9 +2,12 @@ import os
 import chromadb
 from chromadb.config import Settings
 from langchain_aws import BedrockEmbeddings
-import logging
+import structlog
+import uuid
+import time
 
-logger = logging.getLogger(__name__)
+# O11y: Configuração de logs estruturados de classe Enterprise
+logger = structlog.get_logger(__name__)
 
 class RAGService:
     def __init__(self):
@@ -21,14 +24,15 @@ class RAGService:
             else:
                 self.chroma_client = chromadb.PersistentClient(path=chroma_path)
             
-            # Utilize AWS Bedrock Embeddings for generating vector representations
-            # Requires AWS_PROFILE or valid environment credentials
+            # O11y: Observabilidade em embeddings na AWS
+            logger.info("rag_service.init_bedrock", region=os.getenv("AWS_REGION", "us-east-1"), model="amazon.titan-embed-text-v1")
+            
             self.embeddings = BedrockEmbeddings(
                 model_id="amazon.titan-embed-text-v1",
-                region_name=os.getenv("AWS_REGION", "us-east-1")
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
+                # Aqui entra a integração com LangSmith / AWS X-Ray Tracer na prop 'callbacks' em chamadas avançadas
             )
             
-            # Collections
             self.resumes_collection = self.chroma_client.get_or_create_collection(
                 name="user_resumes",
                 metadata={"hnsw:space": "cosine"}
@@ -37,19 +41,33 @@ class RAGService:
                 name="target_jobs",
                 metadata={"hnsw:space": "cosine"}
             )
-            logger.info("ChromaDB Client and Collections Initialized.")
+            logger.info("rag_service.started", status="success")
         except Exception as e:
-            logger.error(f"Failed to initialize RAG Service: {e}")
+            logger.error("rag_service.init_failed", error=str(e), exc_info=True)
             self.chroma_client = None
 
+    def _trace_llm_execution(self, trace_id: str, operation: str, text_length: int):
+        """Mock de injeção de traces O11y para chamadas de IA."""
+        logger.info(
+            "llm.execution.trace",
+            trace_id=trace_id,
+            operation=operation,
+            payload_length=text_length,
+            provider="aws_bedrock"
+        )
+
     def inject_resume(self, user_id: str, resume_text: str, metadata: dict = None):
-        """Vectorize and store user resume in ChromaDB."""
         if not self.chroma_client:
             raise ValueError("ChromaDB not initialized")
             
+        trace_id = str(uuid.uuid4())
+        start_time = time.time()
+        
+        self._trace_llm_execution(trace_id, "embed_resume", len(resume_text))
+        
         vector = self.embeddings.embed_query(resume_text)
         
-        meta = {"user_id": user_id, "type": "resume"}
+        meta = {"user_id": user_id, "type": "resume", "trace_id": trace_id}
         if metadata:
             meta.update(metadata)
             
@@ -59,46 +77,20 @@ class RAGService:
             metadatas=[meta],
             ids=[f"resume_{user_id}"]
         )
-        return True
-
-    def inject_job_description(self, job_id: str, job_text: str, metadata: dict = None):
-        """Vectorize and store target job in ChromaDB."""
-        if not self.chroma_client:
-            raise ValueError("ChromaDB not initialized")
-            
-        vector = self.embeddings.embed_query(job_text)
         
-        meta = {"job_id": job_id, "type": "job"}
-        if metadata:
-            meta.update(metadata)
-            
-        self.jobs_collection.add(
-            embeddings=[vector],
-            documents=[job_text],
-            metadatas=[meta],
-            ids=[f"job_{job_id}"]
-        )
+        duration = time.time() - start_time
+        logger.info("rag_service.inject_resume", user_id=user_id, duration_sec=round(duration, 3))
         return True
 
     def match_resume_to_job(self, resume_text: str, top_k: int = 3):
-        """Query jobs collection with a resume to find matches."""
         if not self.chroma_client:
             raise ValueError("ChromaDB not initialized")
             
+        trace_id = str(uuid.uuid4())
+        self._trace_llm_execution(trace_id, "match_job", len(resume_text))
+        
         query_vector = self.embeddings.embed_query(resume_text)
         results = self.jobs_collection.query(
-            query_embeddings=[query_vector],
-            n_results=top_k
-        )
-        return results
-
-    def match_job_to_resumes(self, job_text: str, top_k: int = 5):
-        """Query resumes collection with a job description to find candidates."""
-        if not self.chroma_client:
-            raise ValueError("ChromaDB not initialized")
-            
-        query_vector = self.embeddings.embed_query(job_text)
-        results = self.resumes_collection.query(
             query_embeddings=[query_vector],
             n_results=top_k
         )

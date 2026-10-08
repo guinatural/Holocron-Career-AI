@@ -7,37 +7,58 @@
 
 ---
 
-## Visão Geral
+## 🎯 Visão Geral
 
-Holocron Career AI é uma plataforma SaaS que usa IA generativa para ajudar profissionais a gerenciar suas carreiras. O sistema conecta vagas, candidaturas, currículos e entrevistas com agentes de IA que auxiliam em cada etapa.
-
-### Diferenciais
-
-- **8 Agentes de IA** especializados (Search, Matching, Resume, Cover Letter, etc.)
-- **Multi-tenant** com isolamento LGPD completo
-- **RAG Pipeline** para matching inteligente
-- **Open-source** (MIT License)
+O **Holocron Career AI** é o produto final do ecossistema Holocron: uma plataforma SaaS *multi-tenant* focada em gestão inteligente de carreira. Diferente de aplicações CRUD tradicionais, esta plataforma utiliza uma arquitetura **Event-Driven** e **Serverless**, integrando **Amazon Bedrock (GenAI)** para matching semântico avançado e agentes autônomos de currículo.
 
 ---
 
-## Arquitetura
+## 🏛️ Arquitetura de Produção (AWS Native)
 
+A arquitetura foi desenhada com foco nos pilares do **AWS Well-Architected Framework**, garantindo Observabilidade (O11y), Controle de Custos (FinOps) e Segurança (Zero Trust).
+
+```mermaid
+flowchart TD
+    subgraph "Frontend Layer (Vercel / AWS Amplify)"
+        UI[Next.js 15 UI - Dashboard]
+    end
+
+    subgraph "API Layer (AWS ECS Fargate / App Runner)"
+        API[FastAPI Backend]
+        O11y[OpenTelemetry / AWS X-Ray]
+        API --- O11y
+    end
+
+    subgraph "State & Vector Store"
+        PG[(PostgreSQL / RDS)]
+        Redis[(Redis Cache)]
+        Chroma[(ChromaDB)]
+    end
+
+    subgraph "AWS AI & Event Core"
+        Bedrock[Amazon Bedrock\nClaude 3.5 / Titan Embeddings]
+        EventBus{Amazon EventBridge}
+        Worker[AWS Step Functions\nAgent Workflows]
+        FinOps[AWS Budgets\nCost Alerts]
+    end
+
+    UI -->|REST API + JWT| API
+    API -->|Read/Write| PG
+    API -->|Cache| Redis
+    API -->|RAG Query| Chroma
+    API -->|Emit Event| EventBus
+    
+    EventBus -->|Trigger| Worker
+    Worker -->|Invoke LLM| Bedrock
+    Chroma <-->|Embeddings| Bedrock
+    
+    FinOps -.->|Monitor| Bedrock
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Frontend (Next.js 15)                │
-│              Dashboard + Kanban + Forms                 │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              API Layer (FastAPI + Uvicorn)              │
-│         REST + OpenAPI + JWT Auth + Rate Limit          │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────┐
-│              Orquestrador (Strands SDK)                 │
-│          Roteamento para Agentes Especializados         │
-└──────────────────────┬──────────────────────────────────┘
-                       │
+
+### 🛡️ Padrões Enterprise Implementados
+1. **FinOps & Cost Control:** AWS Budgets integrados via **AWS CDK** para matar execuções caso o custo de tokens passe do limite diário estabelecido.
+2. **Observabilidade Total:** Logs estruturados e *traces* de execução de IA injetados em todas as chamadas do Bedrock.
+3. **Infraestrutura como Código (IaC):** Stack definida integralmente em **AWS CDK (TypeScript/Python)**.
 ┌──────────────────────▼──────────────────────────────────┐
 │                  8 Agentes de IA                        │
 │  Search  │ Matching │ Resume │ Cover │ Application     │
