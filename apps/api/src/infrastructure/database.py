@@ -8,11 +8,14 @@ from sqlalchemy.orm import sessionmaker
 from .config import settings
 
 # Create engine
+connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(
     settings.DATABASE_URL,
+    connect_args=connect_args,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20
+    # SQLite doesn't support pool_size/max_overflow the same way postgres does
+    pool_size=10 if not settings.DATABASE_URL.startswith("sqlite") else 5,
+    max_overflow=20 if not settings.DATABASE_URL.startswith("sqlite") else 10
 )
 
 # Create session
