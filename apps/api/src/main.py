@@ -57,3 +57,10 @@ async def shutdown_event():
 
 # Include routers
 app.include_router(router)
+from .infrastructure.database import engine
+from .infrastructure.models import Base
+
+@app.on_event("startup")
+async def init_db():
+    Base.metadata.create_all(bind=engine)
+    print("Database tables created.")

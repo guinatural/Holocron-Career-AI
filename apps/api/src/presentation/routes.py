@@ -174,3 +174,57 @@ def match_application(
         application_id=application_id
     )
     return {"score": score, "breakdown": breakdown}
+from ..domain.models import UserProfile, TargetJob, AgentInteraction
+from ..infrastructure.models import UserProfile as DBUserProfile, TargetJob as DBTargetJob, AgentInteraction as DBAgentInteraction
+import uuid
+from datetime import datetime
+
+# Career AI User Routes
+@router.post("/profiles", response_model=UserProfile, status_code=status.HTTP_201_CREATED)
+def create_profile(
+    profile: UserProfile,
+    db: Session = Depends(get_db)
+):
+    """Create a new user profile."""
+    db_profile = DBUserProfile(
+        id=profile.id or str(uuid.uuid4()),
+        tenant_id=profile.tenant_id,
+        name=profile.name,
+        email=profile.email,
+        bio=profile.bio,
+        years_of_experience=profile.years_of_experience,
+        skills=profile.skills,
+        work_history=profile.work_history
+    )
+    db.add(db_profile)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
+
+@router.post("/target-jobs", response_model=TargetJob, status_code=status.HTTP_201_CREATED)
+def create_target_job(
+    job: TargetJob,
+    db: Session = Depends(get_db)
+):
+    """Create a new target job for the user."""
+    db_job = DBTargetJob(
+        id=job.id or str(uuid.uuid4()),
+        tenant_id=job.tenant_id,
+        user_profile_id=job.user_profile_id,
+        title=job.title,
+        level=job.level,
+        salary_range=job.salary_range,
+        desired_skills=job.desired_skills
+    )
+    db.add(db_job)
+    db.commit()
+    db.refresh(db_job)
+    return db_job
+
+@router.get("/interactions", response_model=List[AgentInteraction])
+def list_interactions(
+    tenant_id: str = "default_tenant",
+    db: Session = Depends(get_db)
+):
+    """List all AI agent interactions."""
+    return db.query(DBAgentInteraction).filter(DBAgentInteraction.tenant_id == tenant_id).all()
