@@ -78,7 +78,7 @@ export default function PerfilPage() {
           </div>
           
           {message && (
-            <div className={\p-4 rounded-md text-sm font-medium \\}>
+            <div className={`p-4 rounded-md text-sm font-medium ${message.includes('Erro') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
               {message}
             </div>
           )}
