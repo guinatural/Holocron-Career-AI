@@ -38,7 +38,7 @@ services:
     image: chromadb/chroma:latest
     container_name: holocron-chromadb
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - chromadb_data:/chroma/chroma
     environment:

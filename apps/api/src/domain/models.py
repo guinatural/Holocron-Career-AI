@@ -175,3 +175,39 @@ class ApplicationRecruiter(BaseModel):
     application_id: str
     recruiter_id: str
     assigned_at: datetime
+# User Profile
+class UserProfile(BaseModel):
+    """User profile representing the candidate."""
+    id: str
+    tenant_id: str
+    name: str
+    email: EmailStr
+    bio: Optional[str] = None
+    years_of_experience: Optional[float] = None
+    skills: List[str] = []
+    work_history: List[dict] = []
+    created_at: datetime
+    updated_at: datetime
+
+
+class TargetJob(BaseModel):
+    """Target job the user is aiming for."""
+    id: str
+    tenant_id: str
+    user_profile_id: str
+    title: str
+    level: str
+    salary_range: Optional[str] = None
+    desired_skills: List[str] = []
+    created_at: datetime
+
+
+class AgentInteraction(BaseModel):
+    """History of interactions with AI Agents."""
+    id: str
+    tenant_id: str
+    agent_type: str
+    prompt: str
+    response: str
+    metadata_json: Optional[dict] = None
+    timestamp: datetime

@@ -176,3 +176,51 @@ class ApplicationRecruiter(Base):
     tenant = relationship("Tenant")
     application = relationship("Application", back_populates="recruiters")
     recruiter = relationship("Recruiter")
+class UserProfile(Base):
+    """User profile representing the candidate."""
+    __tablename__ = "user_profiles"
+    
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    bio = Column(Text)
+    years_of_experience = Column(Float)
+    skills = Column(JSON) # List of skills
+    work_history = Column(JSON) # List of past experiences
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    tenant = relationship("Tenant")
+
+
+class TargetJob(Base):
+    """Target job the user is aiming for."""
+    __tablename__ = "target_jobs"
+    
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=False)
+    user_profile_id = Column(String(36), ForeignKey("user_profiles.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    level = Column(String(50), nullable=False) # e.g., Junior, Senior
+    salary_range = Column(String(100))
+    desired_skills = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    tenant = relationship("Tenant")
+    user_profile = relationship("UserProfile")
+
+
+class AgentInteraction(Base):
+    """History of interactions with AI Agents."""
+    __tablename__ = "agent_interactions"
+    
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=False)
+    agent_type = Column(String(100), nullable=False) # e.g., 'resume_tailor', 'mock_interview'
+    prompt = Column(Text, nullable=False)
+    response = Column(Text, nullable=False)
+    metadata_json = Column(JSON)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    
+    tenant = relationship("Tenant")
